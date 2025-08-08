@@ -1,20 +1,38 @@
+// server.js
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import http from "http";
-import {connectDB}from "./lib/db"
+import { connectDB } from "./lib/db.js"; // ✅ Make sure db.js exists and exports connectDB
 
-const app = express(); // ✅ Fixed: use express() properly, not require
-const server = http.createServer(app);
+const app = express();
 
+// Middleware
 app.use(express.json({ limit: "4mb" }));
 app.use(cors());
 
+// Health check route
 app.use("/api/status", (req, res) => res.send("Server is live"));
-//connect to mongodb
-await connectDB();
 
+// Create HTTP server (useful if you plan to add Socket.io later)
+const server = http.createServer(app);
+
+// Port
 const PORT = process.env.PORT || 5000;
 
-// ✅ Fixed: Corrected arrow function syntax in server.listen
-server.listen(PORT, () => console.log("Server is running on PORT: " + PORT));
+// Async server startup
+const startServer = async () => {
+  try {
+    await connectDB(); // Connect to MongoDB
+    server.listen(PORT, () => {
+      console.log(`✅ Server is running on PORT: ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error.message);
+    process.exit(1); // Exit with failure code
+  }
+};
+
+startServer();
+
+
