@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import assets from '../assets/assets';
+import { AuthContext } from '../../context/AuthContext';
 
 const ProfilePage = () => {
+  const { authUser, updateProfile } = useContext(AuthContext);
   const [selectedImg, setSelectedImg] = useState(null);
   const navigate = useNavigate();
-  const [name, setName] = useState("Martin Johnson");
-  const [bio, setBio] = useState("Hi Everyone, I am Using QuickChat");
+  const [name, setName] = useState(authUser.fullName);
+  const [bio, setBio] = useState(authUser.bio);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/');
+
+    if (!selectedImg) {
+      await updateProfile({ fullName: name, bio });
+      navigate('/'); // ✅ Navigate to home (or change to '/profile' if you want to stay here)
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(selectedImg);
+    reader.onload = async () => {
+      const base64Image = reader.result;
+      await updateProfile({ profilePic: base64Image, fullName: name, bio });
+      navigate('/'); // ✅ Correct route
+    };
   };
 
   return (
@@ -35,7 +50,7 @@ const ProfilePage = () => {
             <img 
               src={selectedImg ? URL.createObjectURL(selectedImg) : assets.avatar_icon} 
               alt="profile"
-              className={`w-12 h-12 ${selectedImg && 'rounded-full'}`} 
+              className={`w-12 h-12 ${selectedImg ? 'rounded-full' : ''}`} 
             />
             Upload profile image
           </label>
@@ -75,9 +90,9 @@ const ProfilePage = () => {
         {/* Chat Logo */}
         <div className="flex justify-center items-center w-1/3 max-sm:w-full max-sm:mb-4">
           <img 
-            src={assets.logo_icon} 
+            src={authUser?.profilePic||assets.logo_icon} 
             alt="chat logo" 
-            className="w-32 h-32 object-contain max-sm:w-24 max-sm:h-24" 
+            className={`w-32 h-32 object-contain max-sm:w-24 max-sm:h-24 ${selectedImg ? 'rounded-full' : ''}`}
           />
         </div>
       </div>
@@ -86,3 +101,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+
